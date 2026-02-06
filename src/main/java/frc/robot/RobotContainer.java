@@ -12,7 +12,11 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
 
+<<<<<<< HEAD
 import edu.wpi.first.math.geometry.Pose2d;
+=======
+import edu.wpi.first.math.controller.PIDController;
+>>>>>>> 82a9d6c (auto aim)
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -20,9 +24,11 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+import frc.robot.commands.AutoAim;
 import frc.robot.commands.intake.ExtendIntakeCommand;
 import frc.robot.commands.intake.RetractIntakeCommand;
 import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.Limelight;
 import frc.robot.subsystems.drivetrain.CommandSwerveDrivetrain;
 import frc.robot.subsystems.intake.IntakeSubsystem;
 
@@ -44,8 +50,8 @@ public class RobotContainer {
     private final CommandXboxController joystick = new CommandXboxController(0);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-
-    public final IntakeSubsystem intake = new IntakeSubsystem();
+    
+    private final Limelight limelight = new Limelight();
 
     /* Path follower */
     private final SendableChooser<Command> autoChooser;
@@ -98,6 +104,8 @@ public class RobotContainer {
         joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
         drivetrain.registerTelemetry(logger::telemeterize);
+
+        joystick.back().and(joystick.rightBumper()).whileTrue(new AutoAim(drivetrain, limelight));
     }
 
     public void setInitialPoseForAlliance() {
