@@ -55,10 +55,6 @@ public class ShooterProfile {
         this.defaultRPM = defaultRPM;
     }
     
-    // ========================================
-    // GETTERS
-    // ========================================
-    
     public String getName() {
         return name;
     }

@@ -12,14 +12,9 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkClosedLoopController;
 import frc.robot.constants.IntakeConstants;
 
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-/**
- * Pivot Intake Subsystem
- * Robot hep intake kapalı başlatılmalı! Eğer öyle başlatılmadıysa elle kapatılıp calibrate tuşuna basılmalı.
- */
 public class IntakeSubsystem extends SubsystemBase {
 
     private final SparkMax intakeMotor;
@@ -27,10 +22,10 @@ public class IntakeSubsystem extends SubsystemBase {
     private final SparkClosedLoopController pidController;
 
     private double targetPosition = IntakeConstants.INTAKE_RETRACTED_DEGREES;
-    
-    /** Manuel kontrol modu aktif mi? */
     private boolean manualMode = false;
-    
+
+    private boolean holdingPosition = false;
+
     public IntakeSubsystem() {
         intakeMotor = new SparkMax(IntakeConstants.INTAKE_MOTOR_ID, MotorType.kBrushless);
 
@@ -38,39 +33,44 @@ public class IntakeSubsystem extends SubsystemBase {
         config.idleMode(IdleMode.kBrake)
               .smartCurrentLimit(30)
               .inverted(false);
-        
+
         double positionConversionFactor = 360.0 / IntakeConstants.GEAR_RATIO;
         config.encoder
               .positionConversionFactor(positionConversionFactor)
               .velocityConversionFactor(positionConversionFactor / 60.0);
-        
+
         config.closedLoop
               .pid(IntakeConstants.kP, IntakeConstants.kI, IntakeConstants.kD)
               .positionWrappingEnabled(false);
-        
+
         config.softLimit
               .forwardSoftLimit(IntakeConstants.INTAKE_EXTENDED_DEGREES + 10)
               .forwardSoftLimitEnabled(true)
               .reverseSoftLimit(IntakeConstants.INTAKE_RETRACTED_DEGREES - 10)
               .reverseSoftLimitEnabled(true);
 
+        config.signals
+              .outputCurrentPeriodMs(20)
+              .appliedOutputPeriodMs(20)
+              .busVoltagePeriodMs(20);
+
         intakeMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        intakeMotor.clearFaults();
 
         encoder = intakeMotor.getEncoder();
         pidController = intakeMotor.getClosedLoopController();
 
-        // İlk pozisyon (Intake fiziksel olarak retracted pozisyonda olmalı!)
         encoder.setPosition(IntakeConstants.INTAKE_RETRACTED_DEGREES);
     }
-    
+
     public void extend() {
         setTargetPosition(IntakeConstants.INTAKE_EXTENDED_DEGREES);
     }
-    
+
     public void retract() {
         setTargetPosition(IntakeConstants.INTAKE_RETRACTED_DEGREES);
     }
-    
+
     public void toggle() {
         if (isRetracted()) {
             extend();
@@ -81,99 +81,94 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public void setSpeed(double speed) {
         manualMode = true;
+        holdingPosition = false;
         intakeMotor.set(speed);
-        targetPosition = encoder.getPosition(); // Mevcut pozisyonu hedef yap
+        targetPosition = encoder.getPosition();
     }
-    
+
     public void stop() {
         intakeMotor.stopMotor();
         targetPosition = encoder.getPosition();
+        holdingPosition = false;
+        manualMode = false;
     }
-    
-    /**
-     * ÖNEMLİ: Sadece intake fiziksel olarak retracted pozisyonda iken kullanın!
-     */
+
     public void calibrate() {
         encoder.setPosition(IntakeConstants.INTAKE_RETRACTED_DEGREES);
         targetPosition = IntakeConstants.INTAKE_RETRACTED_DEGREES;
         manualMode = false;
+        holdingPosition = false;
         System.out.println("Intake encoder calibrated to " + IntakeConstants.INTAKE_RETRACTED_DEGREES + " degrees");
     }
-    
+
     public boolean isExtended() {
-        return Math.abs(encoder.getPosition() - IntakeConstants.INTAKE_EXTENDED_DEGREES) 
+        return Math.abs(encoder.getPosition() - IntakeConstants.INTAKE_EXTENDED_DEGREES)
                < IntakeConstants.POSITION_TOLERANCE;
     }
-    
+
     public boolean isRetracted() {
-        return Math.abs(encoder.getPosition() - IntakeConstants.INTAKE_RETRACTED_DEGREES) 
+        return Math.abs(encoder.getPosition() - IntakeConstants.INTAKE_RETRACTED_DEGREES)
                < IntakeConstants.POSITION_TOLERANCE;
     }
-    
+
     public boolean atTarget() {
-        return Math.abs(encoder.getPosition() - targetPosition) < IntakeConstants.POSITION_TOLERANCE;
+        boolean positionOk = Math.abs(encoder.getPosition() - targetPosition)
+                             < IntakeConstants.POSITION_TOLERANCE;
+        boolean velocityOk = Math.abs(getVelocity()) < 5.0; // deg/s
+        return positionOk && velocityOk;
     }
 
-    public double getPosition() {
-        return encoder.getPosition();
-    }
-
-    public double getVelocity() {
-        return encoder.getVelocity();
-    }
-
-    public double getTargetPosition() {
-        return targetPosition;
-    }
+    public double getPosition()      { return encoder.getPosition(); }
+    public double getVelocity()      { return encoder.getVelocity(); }
+    public double getTargetPosition(){ return targetPosition; }
+    public double getMotorCurrent()  { return intakeMotor.getOutputCurrent(); }
+    public boolean isManualMode()    { return manualMode; }
 
     @Deprecated
-    public void resetEncoder() {
-        calibrate();
-    }
-    
-    public double getMotorCurrent() {
-        return intakeMotor.getOutputCurrent();
-    }
-    
-    public boolean isManualMode() {
-        return manualMode;
-    }
+    public void resetEncoder() { calibrate(); }
 
     private void setTargetPosition(double positionDeg) {
-        if (Math.abs(targetPosition - positionDeg) < 0.1) {
-            return;
-        }
-        
+        holdingPosition = false;
         manualMode = false;
         targetPosition = positionDeg;
-        
-        pidController.setSetpoint(targetPosition, ControlType.kPosition, 
-                                   ClosedLoopSlot.kSlot0);
+        pidController.setSetpoint(targetPosition, ControlType.kPosition, ClosedLoopSlot.kSlot0);
     }
 
     @Override
     public void periodic() {
+        // Reached target → stop motor, brake mode holds — eliminates oscillation
+        if (!manualMode && !holdingPosition && atTarget()) {
+            intakeMotor.stopMotor();
+            holdingPosition = true;
+        }
+
+        // Drifted out of tolerance → re-engage PID to correct
+        if (!manualMode && holdingPosition && !atTarget()) {
+            holdingPosition = false;
+            pidController.setSetpoint(targetPosition, ControlType.kPosition, ClosedLoopSlot.kSlot0);
+        }
+
         SmartDashboard.putNumber("Intake/Position (deg)", getPosition());
         SmartDashboard.putNumber("Intake/Target Position (deg)", targetPosition);
         SmartDashboard.putNumber("Intake/Velocity (deg/s)", getVelocity());
+        SmartDashboard.putNumber("Intake/Position Error", targetPosition - getPosition());
         SmartDashboard.putBoolean("Intake/Is Extended", isExtended());
         SmartDashboard.putBoolean("Intake/Is Retracted", isRetracted());
         SmartDashboard.putBoolean("Intake/At Target", atTarget());
+        SmartDashboard.putBoolean("Intake/Holding Position", holdingPosition);
         SmartDashboard.putNumber("Intake/Motor Current", getMotorCurrent());
+        SmartDashboard.putNumber("Intake/Applied Output", intakeMotor.getAppliedOutput());
+        SmartDashboard.putNumber("Intake/Bus Voltage", intakeMotor.getBusVoltage());
         SmartDashboard.putBoolean("Intake/Manual Mode", manualMode);
-        
-        boolean highCurrent = getMotorCurrent() > 25.0;
-        SmartDashboard.putBoolean("Intake/High Current Warning", highCurrent);
-        
-        boolean isStalled = !manualMode && 
-                           Math.abs(getVelocity()) < 0.5 && 
-                           !atTarget() &&
-                           Math.abs(targetPosition - getPosition()) > IntakeConstants.POSITION_TOLERANCE;
-        
+        SmartDashboard.putBoolean("Intake/High Current Warning", getMotorCurrent() > 25.0);
+
+        boolean isStalled = !manualMode && !holdingPosition &&
+                            Math.abs(getVelocity()) < 0.5 && !atTarget() &&
+                            Math.abs(targetPosition - getPosition()) > IntakeConstants.POSITION_TOLERANCE;
         SmartDashboard.putBoolean("Intake/Stalled", isStalled);
 
         boolean outOfBounds = getPosition() < (IntakeConstants.INTAKE_RETRACTED_DEGREES - 15) ||
-                             getPosition() > (IntakeConstants.INTAKE_EXTENDED_DEGREES + 15);
+                              getPosition() > (IntakeConstants.INTAKE_EXTENDED_DEGREES + 15);
         SmartDashboard.putBoolean("Intake/Out of Bounds", outOfBounds);
     }
 }

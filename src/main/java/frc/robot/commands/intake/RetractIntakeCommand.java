@@ -18,6 +18,6 @@ public class RetractIntakeCommand extends Command {
 
     @Override
     public boolean isFinished() {
-        return false;
+        return intake.atTarget();
     }
 }

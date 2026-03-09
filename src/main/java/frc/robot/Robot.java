@@ -63,8 +63,6 @@ public class Robot extends TimedRobot {
 
     @Override
     public void autonomousInit() {
-        m_robotContainer.setInitialPoseForAlliance();
-
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();
         if (m_autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(m_autonomousCommand);
@@ -111,10 +109,5 @@ public class Robot extends TimedRobot {
     public void simulationPeriodic() {
         m_robotContainer.drivetrain.updateSimState(0.020, 12.0);
 
-        m_robotContainer.shooter.simulationPeriodic();
-
-        if (m_robotContainer.fuelSim != null) {
-            m_robotContainer.fuelSim.updateSim();
-        }
     }
 }
