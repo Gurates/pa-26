@@ -62,6 +62,7 @@ public class ShootCommand extends Command {
         lastCommandedDistance = distance;
         SmartDashboard.putString("ShootCommand/Phase", phase.toString());
         SmartDashboard.putNumber("ShootCommand/Distance (m)", distance);
+        SmartDashboard.putNumber("RPM", shooter.getMotorRPM());
     }
 
     @Override
