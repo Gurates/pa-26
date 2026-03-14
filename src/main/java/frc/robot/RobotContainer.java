@@ -3,38 +3,25 @@ package frc.robot;
 import static edu.wpi.first.units.Units.*;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
-import com.ctre.phoenix6.hardware.Pigeon2;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.FollowPathCommand;
 
-import edu.wpi.first.math.controller.PIDController;
-
 import edu.wpi.first.math.geometry.Pose2d;
-
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-
 import frc.robot.commands.AutoShootCommand;
 import frc.robot.commands.ContinuousAimCommand;
 import frc.robot.commands.ShootCommand;
-import frc.robot.commands.AutoAim;
-import frc.robot.commands.intake.ExtendIntakeCommand;
-import frc.robot.commands.intake.RetractIntakeCommand;
 import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.Limelight;
 import frc.robot.subsystems.drivetrain.CommandSwerveDrivetrain;
 import frc.robot.subsystems.feeder.FeederSubsystem;
 import frc.robot.subsystems.hooper.HopperSubsystem;
@@ -63,10 +50,6 @@ public class RobotContainer {
     public final ShooterSubsystem shooter = new ShooterSubsystem();
     public final HopperSubsystem hopper = new HopperSubsystem();
     public final FeederSubsystem feeder = new FeederSubsystem();
-    
-    private final Limelight limelight = new Limelight();
-
-    private final Pigeon2 pigeon2 = new Pigeon2(12);
 
     private final SendableChooser<Command> autoChooser;
 
@@ -97,15 +80,12 @@ public class RobotContainer {
                 drivetrain.applyRequest(() -> idle).ignoringDisable(true));
 
         // ── Drive utility ─────────────────────────────────────────────────────
-        /*
-        joystick.a().whileTrue(drivetrain.applyRequest(() -> brake)); //brake mod
-        joystick.b().whileTrue(drivetrain.applyRequest( 
+        joystick.a().whileTrue(drivetrain.applyRequest(() -> brake));
+        joystick.b().whileTrue(drivetrain.applyRequest(
                 () -> point.withModuleDirection(
                         new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))));
 
-        joystick.leftTrigger().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric)); // reset field centric
-
-        */
+        joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
         // ── SysId ─────────────────────────────────────────────────────────────
         joystick.back().and(joystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
@@ -113,43 +93,35 @@ public class RobotContainer {
         joystick.start().and(joystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
         joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
-        // ── Continuous Aim — hold left bumper ────────────────────────────────
+        // ── Continuous Aim — hold left trigger ────────────────────────────────
         continuousAim = new ContinuousAimCommand(
                 drivetrain,
                 () -> joystick.getLeftY(),
                 () -> joystick.getLeftX(),
                 MaxSpeed);
 
-        joystick.leftBumper().whileTrue(continuousAim);
+        joystick.leftTrigger().whileTrue(continuousAim);
 
         // ── Shoot — hold right bumper ──────────────────────────────────────────
         // Spins up shooter to distance-based RPM, feeds when ready.
         // Pair with left trigger (ContinuousAim) to aim and shoot simultaneously.
+        joystick.rightBumper().whileTrue(
+                new ShootCommand(shooter, hopper, feeder, drivetrain));
 
-        joystick.rightTrigger().whileTrue(Commands.run(hopper::feed, hopper));
-        joystick.a().onTrue(Commands.run(hopper::stop, hopper));
-        joystick.b().onTrue(Commands.run(intakeRoller::stop, intakeRoller));
-
-
-        joystick.y().onTrue(
-                Commands.runOnce(intake::extend, intake)
-                        .alongWith(Commands.run(intakeRoller::intake, intakeRoller))
-);
-
-
+        // ── Intake extend/retract — Y and X buttons ───────────────────────────
+        joystick.y().onTrue(Commands.runOnce(intake::extend, intake));
         joystick.x().onTrue(Commands.runOnce(intake::retract, intake));
 
         // ── Intake roller — right trigger ─────────────────────────────────────
-        joystick.rightBumper().whileTrue(
+        joystick.rightTrigger().whileTrue(
                 Commands.startEnd(
                         intakeRoller::intake,
                         intakeRoller::stop,
                         intakeRoller));
 
         drivetrain.registerTelemetry(logger::telemeterize);
-        SmartDashboard.putData("Autonomous/Auto Chooser", autoChooser);
 
-        joystick.back().and(joystick.rightBumper()).whileTrue(new AutoAim(drivetrain, limelight));
+        SmartDashboard.putData("Autonomous/Auto Chooser", autoChooser);
     }
     
     public Command getAutonomousCommand() {

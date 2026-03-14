@@ -26,7 +26,7 @@ public class IntakeRollerSubsystem extends SubsystemBase {
         SparkMaxConfig config = new SparkMaxConfig();
         config.idleMode(IdleMode.kCoast); 
         config.smartCurrentLimit(30);
-        config.inverted(true);  
+        config.inverted(false);  
         
         rollerMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         
