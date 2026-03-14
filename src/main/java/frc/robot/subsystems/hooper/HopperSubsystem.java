@@ -16,7 +16,7 @@ public class HopperSubsystem extends SubsystemBase {
     private static final int ROLLER_MOTOR_ID = 5;  
     
     private static final double INTAKE_SPEED = 0.6;   
-    private static final double FEED_SPEED = 0.4;     
+    private static final double FEED_SPEED = 0.7;     
     private static final double EJECT_SPEED = -0.5;   
     
     private double currentSpeed = 0.0;
@@ -27,7 +27,7 @@ public class HopperSubsystem extends SubsystemBase {
         SparkMaxConfig config = new SparkMaxConfig();
         config.idleMode(IdleMode.kBrake);
         config.smartCurrentLimit(30);
-        config.inverted(true);  
+        config.inverted(false);  
         
         rollerMotor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         
