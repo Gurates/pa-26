@@ -4,6 +4,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.intake.IntakeSubsystem;
 
 public class RetractIntakeCommand extends Command {
+
     private final IntakeSubsystem intake;
 
     public RetractIntakeCommand(IntakeSubsystem intake) {
@@ -19,5 +20,12 @@ public class RetractIntakeCommand extends Command {
     @Override
     public boolean isFinished() {
         return intake.atTarget();
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        if (interrupted) {
+            intake.stop();
+        }
     }
 }
