@@ -27,7 +27,7 @@ public final class ShooterConstants {
 
     public static final double kFF = 0.0002;
 
-    public static final double VELOCITY_TOLERANCE_RPM = 100.0;
+    public static final double VELOCITY_TOLERANCE_RPM = 300.0;
     
     public static final double MAX_OUTPUT = 1.0;
 
@@ -45,14 +45,13 @@ public final class ShooterConstants {
 
     private static ShooterProfile createStandartProfile() {
         InterpolatingDoubleTreeMap map = new InterpolatingDoubleTreeMap();
-        map.put(1.5, 2000.0);
-        map.put(2.0, 2500.0);
-        map.put(2.5, 3000.0);
-        map.put(3.0, 3000.0);
-        map.put(3.5, 4000.0);
-        map.put(4.0, 4500.0);
-        map.put(4.5, 5000.0);
-        map.put(5.0, 4000.0);
+        map.put(1.5, 2500.0);
+        map.put(2.0, 3000.0);
+        map.put(2.5, 3500.0);
+        map.put(3.0, 4000.0);
+        map.put(3.5, 4500.0);
+        map.put(4.0, 5000.0);
+        map.put(4.5, 5500.0);
         return new ShooterProfile("STANDART", "Standart mil düzeni",
             45.0, LAUNCH_HEIGHT_METERS, TARGET_HEIGHT_METERS, map, 1.5, 5.0, 3800.0);
     }

@@ -35,7 +35,7 @@ import frc.robot.subsystems.shooter.ShooterSubsystem;
 
 public class RobotContainer {
 
-        private final double MaxSpeed = 0.75 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
+        private final double MaxSpeed = 0.5 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
         private final double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
         private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
@@ -105,8 +105,14 @@ public class RobotContainer {
                 joystick.x().onTrue(Commands.runOnce(intakeRoller::intake, intakeRoller));
                 joystick.b().onTrue(Commands.runOnce(intakeRoller::stop, intakeRoller));
 
-                joystick.rightBumper().whileTrue(
+                joystick.leftBumper().whileTrue(
                                 Commands.startEnd(intakeRoller::eject, intakeRoller::stop, intakeRoller));
+
+                joystick.rightBumper().whileTrue(
+                                Commands.startEnd(hopper::eject, hopper::stop, hopper));
+
+                joystick.povUp().onTrue(Commands.runOnce(() -> shooter.setVelocityRPM(shooter.getWheelRPM() + 500),shooter));
+                joystick.povDown().onTrue(Commands.runOnce(() -> shooter.setVelocityRPM(shooter.getWheelRPM() - 500),shooter));
 
                 joystick.back().and(joystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
                 joystick.back().and(joystick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));

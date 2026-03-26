@@ -17,7 +17,7 @@ public class HopperSubsystem extends SubsystemBase {
     private static final int ROLLER_MOTOR_ID = 38;  
     
     private static final double FEED_SPEED = 0.85;     
-    private static final double EJECT_SPEED = -0.3; 
+    private static final double EJECT_SPEED = -0.85; 
     
     public HopperSubsystem() {
         rollerMotor = new SparkMax(ROLLER_MOTOR_ID, MotorType.kBrushless);

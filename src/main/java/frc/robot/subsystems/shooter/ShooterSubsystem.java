@@ -32,6 +32,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private double  spinupStartTime = -1.0;
     private boolean isSpinningUp = false;
+    public double currentRPM = 0;
 
     public ShooterSubsystem() {
         motor = new TalonFX(ShooterConstants.MOTOR_ID);
@@ -114,8 +115,21 @@ public class ShooterSubsystem extends SubsystemBase {
         }
         double wheelRPM = getRPMForDistance(distanceMeters);
         setVelocityRPM(wheelRPM);
-        SmartDashboard.putNumber("Shooter/Last Distance (m)",distanceMeters);
-        SmartDashboard.putNumber("Shooter/Last Commanded RPM",wheelRPM);
+        SmartDashboard.putNumber("Shooter/Last Distance (m)", distanceMeters);
+        SmartDashboard.putNumber("Shooter/Last Commanded RPM", wheelRPM);
+    }
+
+    public void updateVelocityForDistance(double distanceMeters) {
+        if (activeProfile == null) return;
+        double wheelRPM = getRPMForDistance(distanceMeters);
+
+        if (Math.abs(wheelRPM - targetWheelRPM) < 50.0) return;
+
+        targetWheelRPM = wheelRPM;
+        double motorRPS = (wheelRPM * ShooterConstants.GEAR_RATIO) / 60.0;
+        motor.setControl(velocityRequest.withVelocity(motorRPS));
+        SmartDashboard.putNumber("Shooter/Last Distance (m)", distanceMeters);
+        SmartDashboard.putNumber("Shooter/Last Commanded RPM", wheelRPM);
     }
 
     public void setVelocityRPM(double wheelRPM) {
@@ -145,8 +159,13 @@ public class ShooterSubsystem extends SubsystemBase {
         if (targetWheelRPM == 0.0) return false;
         return Math.abs(getWheelRPM() - targetWheelRPM) < ShooterConstants.VELOCITY_TOLERANCE_RPM;
     }
+
     public boolean isReadyToShoot() {
         return atTargetVelocity() && !isSpinningUp;
+    }
+    public boolean isSpeedCriticallyLow() {
+        if (targetWheelRPM == 0.0) return true;
+        return (targetWheelRPM - getWheelRPM()) > ShooterConstants.VELOCITY_TOLERANCE_RPM;
     }
 
     public boolean isDistanceInRange(double distanceMeters) {
