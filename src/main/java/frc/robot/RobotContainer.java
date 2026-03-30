@@ -111,7 +111,7 @@ public class RobotContainer {
 
                 joystick.povUp().whileTrue(
                                 Commands.run(() -> arm.manualDrive(-1), arm));
-
+                
                 // POV Down → extend (direction = +1)
                 joystick.povDown().whileTrue(
                                 Commands.run(() -> arm.manualDrive(+1), arm));

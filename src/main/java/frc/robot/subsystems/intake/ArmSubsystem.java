@@ -25,7 +25,7 @@ public class ArmSubsystem extends SubsystemBase {
     private static final double DEG_PER_SEC_FACTOR = DEG_PER_MOTOR_ROT / 60.0; 
 
     private static final double MIN_ANGLE_DEG = 0.0;    
-    private static final double MAX_ANGLE_DEG = 124;  
+    private static final double MAX_ANGLE_DEG = 126;  
 
     private static final double SOFT_LIMIT_ZONE_DEG = 10.0;
 
