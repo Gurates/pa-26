@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.commands.AutoShootCommand;
 import frc.robot.commands.ContinuousAimCommand;
 import frc.robot.commands.ShootCommand;
+import frc.robot.commands.ShootMoveCommand;
 import frc.robot.commands.intake.ExtendIntakeCommand;
 import frc.robot.commands.intake.RetractIntakeCommand;
 import frc.robot.generated.TunerConstants;
@@ -100,6 +101,8 @@ public class RobotContainer {
                 // joystick.a().onTrue(new ExtendIntakeCommand(intake));
                 // joystick.y().onTrue(new RetractIntakeCommand(intake));
 
+                joystick.a().whileTrue(new ShootMoveCommand(drivetrain,joystick::getLeftY ,joystick::getLeftX , MaxSpeed));
+
                 joystick.x().onTrue(Commands.runOnce(intakeRoller::intake, intakeRoller));
                 joystick.b().onTrue(Commands.runOnce(intakeRoller::stop, intakeRoller));
 
@@ -114,7 +117,9 @@ public class RobotContainer {
                 
                 // POV Down → extend (direction = +1)
                 joystick.povDown().whileTrue(
-                                Commands.run(() -> arm.manualDrive(+1), arm));
+                                Commands.run(() -> arm.manualDrive(+1), arm)
+                                .alongWith(Commands.runOnce(intakeRoller::stop,intakeRoller))
+                                );
 
                 // ── DEFAULT COMMAND ──
                 // When no POV is pressed, hold position with gravity compensation.
