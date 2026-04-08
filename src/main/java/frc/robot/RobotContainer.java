@@ -38,7 +38,7 @@ import frc.robot.util.DashboardConfig;
 
 public class RobotContainer {
 
-        private final double MaxSpeed = 0.5 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
+        private final double MaxSpeed = 0.6 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
         private final double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
         private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
